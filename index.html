@@ -281,24 +281,24 @@ function build(){
     /* 整图铺满整屏（和音乐播放器那种背景一致） */
     pctx.drawImage(imgEl, 0, 0, W, H);
 
-    /* 亮度分层：以月亮为中心的光照，离月亮越远越暗 */
+    /* 基础提亮（保留之前认可的整体亮度） */
     pctx.globalCompositeOperation = 'lighter';
-    var lit = pctx.createRadialGradient(moon.x, moon.y, 0, moon.x, moon.y, W * 1.05);
-    lit.addColorStop(0, 'rgba(255,228,158,0.26)');
-    lit.addColorStop(0.22, 'rgba(226,220,180,0.15)');
-    lit.addColorStop(0.55, 'rgba(150,180,240,0.06)');
-    lit.addColorStop(1, 'rgba(0,0,0,0)');
-    pctx.fillStyle = lit;
-    pctx.fillRect(0, 0, W, H);
+    pctx.globalAlpha = 0.14;
+    pctx.drawImage(imgEl, 0, 0, W, H);
+    pctx.globalAlpha = 1;
     pctx.globalCompositeOperation = 'source-over';
 
-    /* 暗角：把画面边缘和下方压暗 */
-    var vig = pctx.createRadialGradient(W * 0.62, H * 0.26, W * 0.22, W * 0.5, H * 0.45, W * 1.15);
-    vig.addColorStop(0, 'rgba(2,6,18,0)');
-    vig.addColorStop(0.55, 'rgba(2,6,18,0.16)');
-    vig.addColorStop(1, 'rgba(2,6,18,0.62)');
-    pctx.fillStyle = vig;
+    /* 亮度分层：以月亮为光源，越远越暗（用 multiply 压暗，不提亮，避免过曝） */
+    pctx.globalCompositeOperation = 'multiply';
+    var dim = pctx.createRadialGradient(moon.x, moon.y, W * 0.06, moon.x, moon.y, W * 1.30);
+    dim.addColorStop(0, 'rgba(255,255,255,1)');
+    dim.addColorStop(0.20, 'rgba(238,244,255,1)');
+    dim.addColorStop(0.45, 'rgba(190,206,240,1)');
+    dim.addColorStop(0.72, 'rgba(132,156,206,1)');
+    dim.addColorStop(1, 'rgba(84,106,158,1)');
+    pctx.fillStyle = dim;
     pctx.fillRect(0, 0, W, H);
+    pctx.globalCompositeOperation = 'source-over';
 
     strokes = [];
     total = 0;
