@@ -307,9 +307,9 @@ function build(){
     pctx.fillRect(0, f0, W, H - f0);
 
     /* 极轻的暗角，只为收边 */
-    var vig = pctx.createRadialGradient(W * 0.5, H * 0.42, W * 0.46, W * 0.5, H * 0.45, W * 1.18);
+    var vig = pctx.createRadialGradient(W * 0.5, H * 0.42, W * 0.62, W * 0.5, H * 0.45, W * 1.22);
     vig.addColorStop(0, 'rgba(3,8,20,0)');
-    vig.addColorStop(1, 'rgba(3,8,20,0.24)');
+    vig.addColorStop(1, 'rgba(3,8,20,0.12)');
     pctx.fillStyle = vig;
     pctx.fillRect(0, 0, W, H);
 
