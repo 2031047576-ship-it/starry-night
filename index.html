@@ -93,7 +93,7 @@ var paint = null, pctx = null, moonBuf = null;
 var strokes = [], revealed = 0, total = 0;
 var stars = [], moon = null, horizon = 0;
 var T = 0, lastT = 0, raf = 0, started = false, capShown = false;
-var IMG_MODE = false, imgEl = null, imgFade = 0;
+var IMG_MODE = false, imgEl = null, imgFade = 0, artH = 0;
 var dust = [], shooting = [], bursts = [];
 
 function rand(a, b){ return a + Math.random() * (b - a); }
@@ -291,6 +291,7 @@ function build(){
     pctx.fillRect(0, 0, W, H);
     /* 画作按原比例占上方，下缘渐隐进深色背景 */
     var imgH = Math.min(H, ih * (W / iw));
+    artH = imgH;
     pctx.fillStyle = '#050b1a';
     pctx.fillRect(0, 0, W, H);
     pctx.drawImage(imgEl, 0, 0, W, imgH);
@@ -974,8 +975,30 @@ function drawSnow(){
 
 /* 积雪堆 */
 function drawSnowBank(dt){
-  if(revealed < total * 0.5) return;
-  snowAcc = Math.min(1, snowAcc + dt * 0.07);
+  if(revealed < total * 0.5 && !IMG_MODE) return;
+  snowAcc = Math.min(1, snowAcc + dt * 0.09);
+
+  /* 海报模式：雪堆落在画作下缘，像从画里漫出来 */
+  if(IMG_MODE && artH){
+    var yy = artH - 4;
+    var x, y2;
+    ctx.beginPath();
+    ctx.moveTo(-10, artH + 46);
+    for(x = -10; x <= W + 10; x += 9){
+      y2 = yy + Math.sin(x * 0.012 + 1.2) * 5 + Math.sin(x * 0.030 + 0.4) * 3;
+      ctx.lineTo(x, y2);
+    }
+    ctx.lineTo(W + 10, artH + 46);
+    ctx.closePath();
+    var g2 = ctx.createLinearGradient(0, yy - 8, 0, artH + 46);
+    g2.addColorStop(0, 'rgba(238,247,255,' + (0.88 * snowAcc) + ')');
+    g2.addColorStop(0.40, 'rgba(200,224,250,' + (0.58 * snowAcc) + ')');
+    g2.addColorStop(1, 'rgba(120,162,214,0)');
+    ctx.fillStyle = g2;
+    ctx.fill();
+    return;
+  }
+
   var top = H * 0.982 - H * 0.022 * snowAcc;
   var x, y;
   ctx.beginPath();
@@ -1168,7 +1191,6 @@ function buildParticles(){
 }
 
 function startParticles(){
-  return;
   if(particleMode) return;
   try{ buildParticles(); }catch(e){ return; }
   if(!particles.length) return;
@@ -1335,7 +1357,7 @@ function frame(now){
     pFade = Math.min(1, pFade + dt * 0.9);
     ctx.fillStyle = '#05091a';
     ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.62 * (1 - pFade * 0.25);
+    ctx.globalAlpha = 0.72 * (1 - pFade * 0.22);
     drawWarped(drift, driftY);
     ctx.globalAlpha = pFade;
     stepParticles(dt);
@@ -1352,7 +1374,7 @@ function frame(now){
       ctx.globalAlpha = 1;
     }
   }
-  if(!IMG_MODE) drawSnowBank(dt);
+  drawSnowBank(dt);
 
   /* 村庄灯火呼吸 */
   if(revealed > total * 0.55){
@@ -1400,7 +1422,7 @@ function frame(now){
   if(revealed >= total){
     nextFw -= dt;
     if(nextFw <= 0){
-      nextFw = rand(3.2, 5.8);
+      nextFw = rand(2.8, 5.2);
       launchShell();
       if(Math.random() < 0.5){
         setTimeout(function(){ if(revealed >= total) launchShell(); }, 300);
