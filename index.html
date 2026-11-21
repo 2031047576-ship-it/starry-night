@@ -1191,6 +1191,7 @@ function buildParticles(){
 }
 
 function startParticles(){
+  return;
   if(particleMode) return;
   try{ buildParticles(); }catch(e){ return; }
   if(!particles.length) return;
