@@ -288,7 +288,7 @@ function build(){
 
     /* 轻微提亮 + 提饱和（不做压暗，保持通透） */
     pctx.globalCompositeOperation = 'lighter';
-    pctx.globalAlpha = 0.10;
+    pctx.globalAlpha = 0.16;
     pctx.drawImage(imgEl, 0, 0, W, H);
     pctx.globalAlpha = 1;
     pctx.globalCompositeOperation = 'source-over';
@@ -529,7 +529,7 @@ function drawStar(s, t){
   /* 柔和的同心光环，像画里的星星那样一圈圈晕开 */
   for(var i = 1; i <= 3; i++){
     var rr = s.r * (0.95 + i * 0.62);
-    ctx.globalAlpha = (0.16 - i * 0.038) * pulse * L;
+    ctx.globalAlpha = (0.10 - i * 0.026) * pulse * L;
     ctx.strokeStyle = 'rgba(255,234,168,1)';
     ctx.lineWidth = Math.max(1.4, s.r * (0.20 - i * 0.04));
     ctx.beginPath();
@@ -683,7 +683,7 @@ function initFlowP(){
   glowWarm = makeGlow('255,232,164');
   glowCool = makeGlow('205,228,255');
   flowP = [];
-  for(var i = 0; i < 500; i++){
+  for(var i = 0; i < 220; i++){
     var warm = Math.random() < 0.42;
     flowP.push({
       x: rand(0, W), y: rand(-30, H * 0.94),
@@ -693,7 +693,7 @@ function initFlowP(){
       ph: rand(0, TAU),
       sw: rand(0.25, 0.75),
       warm: warm,
-      a: rand(0.35, 0.78)
+      a: rand(0.16, 0.42)
     });
   }
 }
@@ -1207,7 +1207,7 @@ var twinkles = [];
 
 function initTwinkles(){
   twinkles = [];
-  for(var i = 0; i < 110; i++){
+  for(var i = 0; i < 70; i++){
     twinkles.push({
       x: rand(0, W), y: rand(-10, H * 0.92),
       t: rand(0, 4), life: rand(1.6, 3.8), delay: rand(0, 3),
@@ -1260,11 +1260,11 @@ var goldDust = [];
 
 function initGoldDust(){
   goldDust = [];
-  for(var i = 0; i < 130; i++){
+  for(var i = 0; i < 70; i++){
     goldDust.push({
       x: rand(0, W), y: rand(0, H),
       sp: rand(7, 24), ph: rand(0, TAU),
-      sw: rand(0.4, 1.2), a: rand(0.22, 0.62),
+      sw: rand(0.4, 1.2), a: rand(0.12, 0.38),
       s: rand(0.6, 1.25)
     });
   }
