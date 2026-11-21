@@ -323,6 +323,7 @@ function build(){
   }
 
   total = strokes.length;
+  initFlowP();
   dust = [];
   for(i = 0; i < 42; i++){
     dust.push({ x: rand(0, W), y: rand(0, horizon), r: rand(0.7, 2.2), ph: rand(0, TAU), sp: rand(0.15, 0.5), vy: rand(-4, 4) });
@@ -417,6 +418,7 @@ function revealStep(n){
   var end = Math.min(total, revealed + n);
   for(var i = revealed; i < end; i++) drawStroke(strokes[i]);
   revealed = end;
+  if(end > 0) revealY = strokes[end - 1].p[1];
 }
 
 /* 星星的光环 */
@@ -530,6 +532,166 @@ function drawBursts(dt){
   ctx.globalCompositeOperation = 'source-over';
 }
 
+/* ---------------- 烟花与流粒子 ---------------- */
+var shells = [], sparks = [], flowP = [], nextFw = 3.0, revealY = 0;
+var FW = ['#ffd979', '#fff6d6', '#ffc94a', '#9dc4ee', '#7aa9e0', '#cfe0ff', '#ffe9a6', '#bcd4ff'];
+
+function initFlowP(){
+  flowP = [];
+  for(var i = 0; i < 160; i++){
+    flowP.push({
+      x: rand(0, W), y: rand(0, horizon * 0.98),
+      life: rand(0, 3), max: rand(2.4, 5.5),
+      r: rand(0.7, 1.9),
+      col: Math.random() < 0.55 ? pick(PAL.glow) : pick(PAL.white)
+    });
+  }
+}
+
+function stepFlowP(dt){
+  ctx.globalCompositeOperation = 'lighter';
+  for(var i = 0; i < flowP.length; i++){
+    var p = flowP[i];
+    p.life += dt;
+    var d = flow(p.x, p.y);
+    p.x += d[0] * 30 * dt;
+    p.y += d[1] * 30 * dt;
+    if(p.life > p.max || p.x < -24 || p.x > W + 24 || p.y < -24 || p.y > horizon + 14){
+      p.x = rand(0, W);
+      p.y = rand(0, horizon);
+      p.life = 0;
+      p.max = rand(2.4, 5.5);
+    }
+    var a = Math.sin(Math.PI * clamp(p.life / p.max, 0, 1)) * 0.5;
+    if(a <= 0) continue;
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.col;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, TAU);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function launchShell(x0){
+  var sx = (x0 === undefined) ? rand(W * 0.10, W * 0.90) : x0;
+  shells.push({
+    x: sx, y: horizon + rand(-4, 16),
+    tx: sx + rand(-W * 0.10, W * 0.10), ty: rand(H * 0.08, H * 0.42),
+    t: 0, col: pick(FW)
+  });
+}
+
+function stepShells(dt){
+  for(var i = shells.length - 1; i >= 0; i--){
+    var s = shells[i];
+    s.t += dt;
+    s.x += (s.tx - s.x) * 2.2 * dt;
+    s.y += (s.ty - s.y) * 3.0 * dt;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = s.col;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 2.2, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 0.28;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y + 9, 1.3, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'source-over';
+    if(s.t > 0.92 || Math.abs(s.y - s.ty) < 6){
+      explode(s.x, s.y, s.col);
+      shells.splice(i, 1);
+    }
+  }
+}
+
+function explode(x, y, col){
+  var n = 74 + ((Math.random() * 48) | 0);
+  for(var i = 0; i < n; i++){
+    var a = (i / n) * TAU + rand(-0.06, 0.06);
+    var sp = rand(110, 320);
+    if(Math.random() < 0.3) sp *= Math.pow(Math.random(), 0.5);
+    sparks.push({
+      x: x, y: y, px: x, py: y,
+      vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+      g: rand(95, 150), drag: 0.968,
+      life: rand(0.9, 1.8), t: 0,
+      col: Math.random() < 0.74 ? col : pick(FW),
+      r: rand(0.9, 2.2)
+    });
+  }
+  bursts.push({ x: x, y: y, t: 0, life: 0.42, parts: [{ vx: 0, vy: 0, r: 6 }] });
+}
+
+function drawSparks(dt){
+  ctx.globalCompositeOperation = 'lighter';
+  for(var i = sparks.length - 1; i >= 0; i--){
+    var s = sparks[i];
+    s.t += dt;
+    if(s.t >= s.life){ sparks.splice(i, 1); continue; }
+    s.px = s.x; s.py = s.y;
+    s.vy += s.g * dt;
+    var dr = Math.pow(s.drag, dt * 60);
+    s.vx *= dr;
+    s.vy *= dr;
+    s.x += s.vx * dt;
+    s.y += s.vy * dt;
+    var k = 1 - s.t / s.life;
+    ctx.globalAlpha = k * 0.9;
+    ctx.strokeStyle = s.col;
+    ctx.lineWidth = s.r * (0.45 + k * 0.85);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(s.px, s.py);
+    ctx.lineTo(s.x, s.y);
+    ctx.stroke();
+    ctx.globalAlpha = k * 0.45;
+    ctx.fillStyle = s.col;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r * 1.1, 0, TAU);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ---------------- 音乐（同目录 music.mp3，存在就播） ---------------- */
+var AC = null, musicBuf = null, musicOn = false, musicGain = null;
+
+function loadMusic(){
+  try{
+    fetch('music.mp3', { cache: 'force-cache' }).then(function(r){
+      if(!r.ok) throw new Error('none');
+      return r.arrayBuffer();
+    }).then(function(ab){
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return;
+      AC = new Ctx();
+      return AC.decodeAudioData(ab).then(function(b){ musicBuf = b; });
+    }).catch(function(){});
+  }catch(e){}
+}
+
+function startMusic(){
+  if(!musicBuf || musicOn || !AC) return;
+  try{
+    if(AC.state === 'suspended') AC.resume();
+    var s = AC.createBufferSource();
+    s.buffer = musicBuf;
+    s.loop = true;
+    musicGain = AC.createGain();
+    musicGain.gain.setValueAtTime(0.0001, AC.currentTime);
+    musicGain.gain.linearRampToValueAtTime(0.62, AC.currentTime + 3.2);
+    s.connect(musicGain);
+    musicGain.connect(AC.destination);
+    s.start(0);
+    musicOn = true;
+  }catch(e){}
+}
+
 /* ---------------- 主循环 ---------------- */
 function frame(now){
   raf = requestAnimationFrame(frame);
@@ -563,28 +725,49 @@ function frame(now){
     ctx.drawImage(paint, drift, driftY, W, H);
   }
 
-  if(revealed > total * 0.55){
+  /* 铺色推进时的光带 */
+  if(revealed < total && revealY > 0){
+    ctx.globalCompositeOperation = 'lighter';
+    var sw = ctx.createLinearGradient(0, revealY - 76, 0, revealY + 76);
+    sw.addColorStop(0, 'rgba(255,220,140,0)');
+    sw.addColorStop(0.5, 'rgba(255,226,150,0.13)');
+    sw.addColorStop(1, 'rgba(255,220,140,0)');
+    ctx.fillStyle = sw;
+    ctx.fillRect(0, revealY - 76, W, 152);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  if(revealed > total * 0.45){
+    stepFlowP(dt);
     for(var i = 0; i < stars.length; i++) drawStar(stars[i], T);
     drawMoon(T);
     drawDust(T);
+    stepShells(dt);
+    drawSparks(dt);
     drawShooting();
     drawBursts(dt);
+  }
+
+  if(revealed >= total){
+    nextFw -= dt;
+    if(nextFw <= 0){
+      nextFw = rand(4.5, 8.0);
+      launchShell();
+      if(Math.random() < 0.35){
+        setTimeout(function(){ if(revealed >= total) launchShell(); }, 340);
+      }
+    }
   }
 }
 
 /* ---------------- 交互 ---------------- */
 function tap(x, y){
+  if(!musicOn) startMusic();
   if(revealed < total * 0.6) return;
-  var n = 16 + ((Math.random() * 8) | 0);
-  var parts = [];
-  for(var i = 0; i < n; i++){
-    var a = Math.random() * TAU;
-    var v = rand(0.4, 1.8);
-    parts.push({ vx: Math.cos(a) * v, vy: Math.sin(a) * v - 0.4, r: rand(0.8, 2.0) });
-  }
-  bursts.push({ x: x, y: y, t: 0, life: rand(1.1, 1.6), parts: parts });
+  explode(x, y, pick(FW));
+  if(Math.random() < 0.4) launchShell();
 
-  if(Math.random() < 0.55){
+  if(Math.random() < 0.6){
     var sx = rand(W * 0.1, W * 0.8);
     shooting.push({
       x0: sx, y0: rand(H * 0.05, H * 0.22),
@@ -627,6 +810,7 @@ document.addEventListener('visibilitychange', function(){
 window.addEventListener('pageshow', function(){ if(!raf){ lastT = 0; raf = requestAnimationFrame(frame); } });
 
 resize();
+loadMusic();
 raf = requestAnimationFrame(frame);
 
 })();
