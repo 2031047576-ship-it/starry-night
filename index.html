@@ -1187,9 +1187,9 @@ function buildParticles(){
       var i4 = (y * pw + x) * 4;
       var r = img[i4], g = img[i4 + 1], b = img[i4 + 2];
       if(r + g + b < 30) continue;
-      var rr = Math.min(255, Math.round(r * 1.06));
-      var gg = Math.min(255, Math.round(g * 1.06));
-      var bb = Math.min(255, Math.round(b * 1.04));
+      var rr = Math.min(255, Math.round(r * 1.18));
+      var gg = Math.min(255, Math.round(g * 1.18));
+      var bb = Math.min(255, Math.round(b * 1.14));
       var cx = (x + rand(-cell * 0.3, cell * 0.3) * DPR) / DPR;
       var cy = (y + rand(-cell * 0.3, cell * 0.3) * DPR) / DPR;
       particles.push({
@@ -1209,7 +1209,6 @@ function buildParticles(){
 }
 
 function startParticles(){
-  return;
   if(particleMode) return;
   try{ buildParticles(); }catch(e){ return; }
   if(!particles.length) return;
@@ -1243,7 +1242,7 @@ function stepParticles(dt){
   ctx.globalAlpha = pFade;
   ctx.drawImage(partCvs, 0, 0, W, H);
   ctx.globalCompositeOperation = 'lighter';
-  ctx.globalAlpha = pFade * 0.14;
+  ctx.globalAlpha = pFade * 0.18;
   ctx.drawImage(partCvs, 0, 0, W, H);
   ctx.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = 1;
@@ -1380,7 +1379,7 @@ function frame(now){
     pFade = Math.min(1, pFade + dt * 0.9);
     ctx.fillStyle = '#05091a';
     ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.76 * (1 - pFade * 0.2);
+    ctx.globalAlpha = 0.55 * (1 - pFade * 0.2);
     drawWarped(drift, driftY);
     ctx.globalAlpha = pFade;
     stepParticles(dt);
