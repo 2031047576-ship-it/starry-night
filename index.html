@@ -1119,6 +1119,7 @@ function drawGL(){
 
 /* ---------------- 画面化为粒子 ---------------- */
 var particles = [], particleMode = false, pFade = 0;
+var partCvs = null, partCtx = null;
 
 function buildParticles(){
   particles = [];
@@ -1130,24 +1131,29 @@ function buildParticles(){
     for(var x = 0; x < pw; x += step){
       var i4 = (y * pw + x) * 4;
       var r = img[i4], g = img[i4 + 1], b = img[i4 + 2];
-      if(r + g + b < 26) continue;
-      var jx = rand(-cell * 0.34, cell * 0.34);
-      var jy = rand(-cell * 0.34, cell * 0.34);
-      var al = 0.55 + Math.random() * 0.45;
-      var cx = (x + jx * DPR) / DPR, cy = (y + jy * DPR) / DPR;
+      if(r + g + b < 30) continue;
+      var rr = Math.min(255, Math.round(r * 1.14));
+      var gg = Math.min(255, Math.round(g * 1.14));
+      var bb = Math.min(255, Math.round(b * 1.12));
+      var cx = (x + rand(-cell * 0.3, cell * 0.3) * DPR) / DPR;
+      var cy = (y + rand(-cell * 0.3, cell * 0.3) * DPR) / DPR;
       particles.push({
         hx: cx, hy: cy, x: cx, y: cy,
         vx: 0, vy: 0,
-        c: 'rgba(' + r + ',' + g + ',' + b + ',' + al.toFixed(2) + ')',
-        sz: cell * (0.55 + Math.random() * 0.55),
+        c: 'rgb(' + rr + ',' + gg + ',' + bb + ')',
         ph: rand(0, TAU)
       });
     }
   }
+  if(!partCvs){
+    partCvs = document.createElement('canvas');
+    partCtx = partCvs.getContext('2d');
+  }
+  partCvs.width = Math.round(W / 2);
+  partCvs.height = Math.round(H / 2);
 }
 
 function startParticles(){
-  return;
   if(particleMode) return;
   try{ buildParticles(); }catch(e){ return; }
   if(!particles.length) return;
@@ -1169,20 +1175,18 @@ function stepParticles(dt){
     p.x += p.vx * dt;
     p.y += p.vy * dt;
   }
+  if(!partCtx) return;
+  partCtx.clearRect(0, 0, partCvs.width, partCvs.height);
+  var S = 3.4;
   for(i = 0; i < particles.length; i++){
     p = particles[i];
-    ctx.fillStyle = p.c;
-    ctx.fillRect(p.x - p.sz * 0.5, p.y - p.sz * 0.5, p.sz, p.sz);
+    partCtx.fillStyle = p.c;
+    partCtx.fillRect(p.x * 0.5 - S * 0.5, p.y * 0.5 - S * 0.5, S, S);
   }
-  /* 少量粒子带柔光，像星点在闪 */
-  ctx.globalCompositeOperation = 'lighter';
-  ctx.globalAlpha = 0.20 * pFade;
-  for(i = 0; i < particles.length; i += 11){
-    p = particles[i];
-    ctx.drawImage(glowWarm, p.x - 4.5, p.y - 4.5, 9, 9);
-  }
+  ctx.imageSmoothingEnabled = true;
+  ctx.globalAlpha = pFade;
+  ctx.drawImage(partCvs, 0, 0, W, H);
   ctx.globalAlpha = 1;
-  ctx.globalCompositeOperation = 'source-over';
 }
 
 /* ---------------- 星星闪烁 ---------------- */
@@ -1279,7 +1283,7 @@ function frame(now){
     pFade = Math.min(1, pFade + dt * 0.9);
     ctx.fillStyle = '#05091a';
     ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.52 * (1 - pFade * 0.30);
+    ctx.globalAlpha = 0.62 * (1 - pFade * 0.25);
     drawWarped(drift, driftY);
     ctx.globalAlpha = pFade;
     stepParticles(dt);
