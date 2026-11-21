@@ -264,7 +264,7 @@ function build(){
     { x: W * 0.37, y: H * 0.09, r: W * 0.07, k: 1.8 },
     { x: W * 0.52, y: H * 0.24, r: W * 0.05, k: 1.5 }
   ];
-  moon = { x: W * 0.86, y: H * 0.18, r: W * 0.10, k: 2.6 };
+  moon = { x: W * 0.87, y: H * 0.28, r: W * 0.098, k: 2.6 };
 
   /* 真实画作模式：直接把原图铺满 */
   if(IMG_MODE && imgEl){
@@ -275,25 +275,22 @@ function build(){
     var dh = ih * sc;
     var oy = (H - dh) / 2;
 
-    pctx.fillStyle = '#081026';
+    pctx.fillStyle = '#050b1c';
     pctx.fillRect(0, 0, W, H);
+    /* 背景：整图压暗铺满，上下留白处自然衔接 */
+    pctx.globalAlpha = 0.55;
+    try{ pctx.filter = 'blur(16px) brightness(0.7)'; }catch(e){}
+    pctx.drawImage(imgEl, 0, 0, W, H);
+    try{ pctx.filter = 'none'; }catch(e){}
+    pctx.globalAlpha = 1;
+    /* 前景：原比例按宽度铺满 */
     pctx.drawImage(imgEl, 0, oy, W, dh);
-
-    /* 上下空白用画面边缘的深色渐变过渡，避免硬接缝 */
     if(oy > 2){
-      var gt = pctx.createLinearGradient(0, 0, 0, oy + 110);
-      gt.addColorStop(0, '#050d22');
-      gt.addColorStop(0.55, 'rgba(7,16,40,0.92)');
-      gt.addColorStop(1, 'rgba(9,20,48,0)');
+      var gt = pctx.createLinearGradient(0, 0, 0, oy + 40);
+      gt.addColorStop(0, 'rgba(4,10,26,0.55)');
+      gt.addColorStop(1, 'rgba(4,10,26,0)');
       pctx.fillStyle = gt;
-      pctx.fillRect(0, 0, W, oy + 110);
-
-      var gb = pctx.createLinearGradient(0, H, 0, H - oy - 110);
-      gb.addColorStop(0, '#050d22');
-      gb.addColorStop(0.55, 'rgba(7,16,40,0.92)');
-      gb.addColorStop(1, 'rgba(9,20,48,0)');
-      pctx.fillStyle = gb;
-      pctx.fillRect(0, H - oy - 110, W, oy + 110);
+      pctx.fillRect(0, 0, W, oy + 40);
     }
 
     strokes = [];
@@ -543,6 +540,21 @@ function drawMoon(t){
   ctx.globalAlpha = 0.94;
   ctx.drawImage(moonBuf, m.x - size / 2, m.y - size / 2, size, size);
   ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawMoonGlow(){
+  var pulse = 0.82 + 0.18 * Math.sin(T * 0.85);
+  ctx.globalCompositeOperation = 'lighter';
+  var g = ctx.createRadialGradient(moon.x, moon.y, moon.r * 0.35, moon.x, moon.y, moon.r * 2.8);
+  g.addColorStop(0, 'rgba(255,245,190,' + (0.34 * pulse) + ')');
+  g.addColorStop(0.35, 'rgba(255,222,132,' + (0.15 * pulse) + ')');
+  g.addColorStop(0.7, 'rgba(255,210,110,' + (0.05 * pulse) + ')');
+  g.addColorStop(1, 'rgba(255,205,100,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(moon.x, moon.y, moon.r * 2.8, 0, TAU);
+  ctx.fill();
   ctx.globalCompositeOperation = 'source-over';
 }
 
@@ -1126,7 +1138,7 @@ function buildParticles(){
 }
 
 function startParticles(){
-  if(IMG_MODE) return;
+  return;
   if(particleMode) return;
   try{ buildParticles(); }catch(e){ return; }
   if(!particles.length) return;
@@ -1306,6 +1318,8 @@ function frame(now){
     if(!IMG_MODE){
       for(var i = 0; i < stars.length; i++) drawStar(stars[i], T);
       drawMoon(T);
+    } else {
+      drawMoonGlow();
     }
     drawDust(T);
     stepShells(dt);
