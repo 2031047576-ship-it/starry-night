@@ -300,8 +300,8 @@ function build(){
     for(var si = 0; si < stars.length; si++) stars[si].y *= kk;
     moon.y *= kk;
 
-    var f0 = imgH - H * 0.05;
-    var fade = pctx.createLinearGradient(0, f0, 0, imgH + H * 0.13);
+    var f0 = imgH - H * 0.015;
+    var fade = pctx.createLinearGradient(0, f0, 0, imgH + H * 0.055);
     fade.addColorStop(0, 'rgba(5,11,26,0)');
     fade.addColorStop(1, 'rgba(5,11,26,1)');
     pctx.fillStyle = fade;
@@ -1214,7 +1214,7 @@ function stepParticles(dt){
   }
   if(!partCtx) return;
   partCtx.clearRect(0, 0, partCvs.width, partCvs.height);
-  var S = 3.4;
+  var S = 2.4;
   for(i = 0; i < particles.length; i++){
     p = particles[i];
     partCtx.fillStyle = p.c;
@@ -1361,7 +1361,7 @@ function frame(now){
     pFade = Math.min(1, pFade + dt * 0.9);
     ctx.fillStyle = '#05091a';
     ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 0.58 * (1 - pFade * 0.25);
+    ctx.globalAlpha = 0.76 * (1 - pFade * 0.2);
     drawWarped(drift, driftY);
     ctx.globalAlpha = pFade;
     stepParticles(dt);
