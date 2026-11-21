@@ -277,21 +277,8 @@ function build(){
 
     pctx.fillStyle = '#050b1c';
     pctx.fillRect(0, 0, W, H);
-    /* 背景：整图压暗铺满，上下留白处自然衔接 */
-    pctx.globalAlpha = 0.55;
-    try{ pctx.filter = 'blur(16px) brightness(0.7)'; }catch(e){}
+    /* 整图铺满整屏（和音乐播放器那种背景一致） */
     pctx.drawImage(imgEl, 0, 0, W, H);
-    try{ pctx.filter = 'none'; }catch(e){}
-    pctx.globalAlpha = 1;
-    /* 前景：原比例按宽度铺满 */
-    pctx.drawImage(imgEl, 0, oy, W, dh);
-    if(oy > 2){
-      var gt = pctx.createLinearGradient(0, 0, 0, oy + 40);
-      gt.addColorStop(0, 'rgba(4,10,26,0.55)');
-      gt.addColorStop(1, 'rgba(4,10,26,0)');
-      pctx.fillStyle = gt;
-      pctx.fillRect(0, 0, W, oy + 40);
-    }
 
     strokes = [];
     total = 0;
