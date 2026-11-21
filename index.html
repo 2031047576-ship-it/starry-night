@@ -259,12 +259,13 @@ function build(){
   horizon = H * 0.615;
 
   stars = [
-    { x: W * 0.25, y: H * 0.33, r: W * 0.20, k: 2.8 },
-    { x: W * 0.48, y: H * 0.50, r: W * 0.14, k: 2.2 },
-    { x: W * 0.37, y: H * 0.09, r: W * 0.07, k: 1.8 },
-    { x: W * 0.52, y: H * 0.24, r: W * 0.05, k: 1.5 }
+    { x: W * 0.385, y: H * 0.123, r: W * 0.078, k: 1.9 },
+    { x: W * 0.200, y: H * 0.390, r: W * 0.062, k: 1.7 },
+    { x: W * 0.540, y: H * 0.250, r: W * 0.052, k: 1.5 },
+    { x: W * 0.660, y: H * 0.400, r: W * 0.046, k: 1.4 },
+    { x: W * 0.060, y: H * 0.105, r: W * 0.040, k: 1.2 }
   ];
-  moon = { x: W * 0.87, y: H * 0.28, r: W * 0.098, k: 2.6 };
+  moon = { x: W * 0.875, y: H * 0.285, r: W * 0.098, k: 2.6 };
 
   /* 真实画作模式：直接把原图铺满 */
   if(IMG_MODE && imgEl){
@@ -279,6 +280,12 @@ function build(){
     pctx.fillRect(0, 0, W, H);
     /* 整图铺满整屏（和音乐播放器那种背景一致） */
     pctx.drawImage(imgEl, 0, 0, W, H);
+    /* 提亮 + 提饱和：叠一层同图 */
+    pctx.globalCompositeOperation = 'lighter';
+    pctx.globalAlpha = 0.16;
+    pctx.drawImage(imgEl, 0, 0, W, H);
+    pctx.globalAlpha = 1;
+    pctx.globalCompositeOperation = 'source-over';
 
     strokes = [];
     total = 0;
@@ -1302,11 +1309,11 @@ function frame(now){
 
   if(revealed > total * 0.45 || (IMG_MODE && total === 0 && imgFade > 0.05)){
     stepFlowP(dt);
-    if(!IMG_MODE){
-      for(var i = 0; i < stars.length; i++) drawStar(stars[i], T);
-      drawMoon(T);
-    } else {
+    for(var i = 0; i < stars.length; i++) drawStar(stars[i], T);
+    if(IMG_MODE){
       drawMoonGlow();
+    } else {
+      drawMoon(T);
     }
     drawDust(T);
     stepShells(dt);
