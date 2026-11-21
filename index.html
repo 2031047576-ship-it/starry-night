@@ -276,7 +276,7 @@ function build(){
     { x: W * 0.660, y: H * 0.400, r: W * 0.046, k: 1.4, lum: 0.36 },
     { x: W * 0.060, y: H * 0.105, r: W * 0.040, k: 1.2, lum: 0.30 }
   ];
-  moon = { x: W * 0.875, y: H * 0.285, r: W * 0.098, k: 2.6 };
+  moon = { x: W * 0.800, y: H * 0.150, r: W * 0.088, k: 2.6 };
 
   /* 真实画作模式：直接把原图铺满 */
   if(IMG_MODE && imgEl){
@@ -586,17 +586,55 @@ function drawMoon(t){
 }
 
 function drawMoonGlow(){
-  var pulse = 0.88 + 0.12 * Math.sin(T * 0.7);
+  var m = moon;
+  var pulse = 0.90 + 0.10 * Math.sin(T * 0.7);
+  var i, cx, cy, cr;
+
   ctx.globalCompositeOperation = 'lighter';
-  var g = ctx.createRadialGradient(moon.x, moon.y, moon.r * 0.55, moon.x, moon.y, moon.r * 3.0);
-  g.addColorStop(0, 'rgba(255,246,210,' + (0.16 * pulse) + ')');
-  g.addColorStop(0.28, 'rgba(255,234,170,' + (0.085 * pulse) + ')');
-  g.addColorStop(0.60, 'rgba(255,222,140,' + (0.035 * pulse) + ')');
-  g.addColorStop(1, 'rgba(255,214,120,0)');
-  ctx.fillStyle = g;
+
+  /* 1. 大范围月华 */
+  var halo = ctx.createRadialGradient(m.x, m.y, m.r * 0.85, m.x, m.y, m.r * 4.8);
+  halo.addColorStop(0, 'rgba(255,246,214,' + (0.15 * pulse) + ')');
+  halo.addColorStop(0.28, 'rgba(255,236,180,' + (0.070 * pulse) + ')');
+  halo.addColorStop(0.62, 'rgba(255,226,160,' + (0.026 * pulse) + ')');
+  halo.addColorStop(1, 'rgba(255,218,140,0)');
+  ctx.fillStyle = halo;
   ctx.beginPath();
-  ctx.arc(moon.x, moon.y, moon.r * 3.0, 0, TAU);
+  ctx.arc(m.x, m.y, m.r * 4.8, 0, TAU);
   ctx.fill();
+
+  /* 2. 月面本体（有球体感） */
+  var disc = ctx.createRadialGradient(m.x - m.r * 0.32, m.y - m.r * 0.34, m.r * 0.04, m.x, m.y, m.r);
+  disc.addColorStop(0, 'rgba(255,254,246,' + (0.80 * pulse) + ')');
+  disc.addColorStop(0.42, 'rgba(255,247,216,' + (0.66 * pulse) + ')');
+  disc.addColorStop(0.78, 'rgba(255,236,180,' + (0.52 * pulse) + ')');
+  disc.addColorStop(1, 'rgba(255,224,150,' + (0.30 * pulse) + ')');
+  ctx.fillStyle = disc;
+  ctx.beginPath();
+  ctx.arc(m.x, m.y, m.r, 0, TAU);
+  ctx.fill();
+
+  /* 3. 环形山（很淡的暗斑） */
+  ctx.globalAlpha = 0.055 * pulse;
+  ctx.fillStyle = 'rgba(140,132,104,1)';
+  var cr = [[-0.30, -0.20, 0.17], [0.08, -0.34, 0.11], [0.27, 0.09, 0.20], [-0.14, 0.28, 0.13], [0.33, -0.14, 0.085], [-0.42, 0.06, 0.10]];
+  for(i = 0; i < cr.length; i++){
+    cx = m.x + cr[i][0] * m.r;
+    cy = m.y + cr[i][1] * m.r;
+    ctx.beginPath();
+    ctx.arc(cx, cy, cr[i][2] * m.r, 0, TAU);
+    ctx.fill();
+  }
+
+  /* 4. 亮边 */
+  ctx.globalAlpha = 0.24 * pulse;
+  ctx.strokeStyle = 'rgba(255,250,226,1)';
+  ctx.lineWidth = Math.max(1.2, m.r * 0.055);
+  ctx.beginPath();
+  ctx.arc(m.x, m.y, m.r * 0.985, 0, TAU);
+  ctx.stroke();
+
+  ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
 }
 
