@@ -28,6 +28,10 @@
     transition:opacity 2.2s ease,transform 2.2s ease;
   }
   .cap.show{opacity:1;transform:none;}
+  .cap .ln{
+    width:52px;height:1px;margin:0 auto 18px;
+    background:linear-gradient(90deg,rgba(232,201,135,0),rgba(240,214,150,.9),rgba(232,201,135,0));
+  }
   .cap .cn{
     font-size:clamp(26px,8.2vw,44px);
     letter-spacing:.3em;margin-left:.3em;
@@ -62,6 +66,7 @@
 <canvas id="gl"></canvas>
 <canvas id="c"></canvas>
 <div class="cap" id="cap">
+  <div class="ln"></div>
   <div class="cn">圣诞快乐</div>
   <div class="en">A STARRY NIGHT FOR YOU</div>
 </div>
@@ -281,24 +286,29 @@ function build(){
     /* 整图铺满整屏（和音乐播放器那种背景一致） */
     pctx.drawImage(imgEl, 0, 0, W, H);
 
-    /* 基础提亮（保留之前认可的整体亮度） */
+    /* 轻微提亮 + 提饱和（不做压暗，保持通透） */
     pctx.globalCompositeOperation = 'lighter';
-    pctx.globalAlpha = 0.14;
+    pctx.globalAlpha = 0.10;
     pctx.drawImage(imgEl, 0, 0, W, H);
     pctx.globalAlpha = 1;
     pctx.globalCompositeOperation = 'source-over';
 
-    /* 亮度分层：以月亮为光源，越远越暗（用 multiply 压暗，不提亮，避免过曝） */
-    pctx.globalCompositeOperation = 'multiply';
-    var dim = pctx.createRadialGradient(moon.x, moon.y, W * 0.06, moon.x, moon.y, W * 1.30);
-    dim.addColorStop(0, 'rgba(255,255,255,1)');
-    dim.addColorStop(0.20, 'rgba(238,244,255,1)');
-    dim.addColorStop(0.45, 'rgba(190,206,240,1)');
-    dim.addColorStop(0.72, 'rgba(132,156,206,1)');
-    dim.addColorStop(1, 'rgba(84,106,158,1)');
-    pctx.fillStyle = dim;
+    /* 月亮方向的暖光 */
+    pctx.globalCompositeOperation = 'lighter';
+    var warm = pctx.createRadialGradient(moon.x, moon.y, 0, moon.x, moon.y, W * 0.95);
+    warm.addColorStop(0, 'rgba(255,226,150,0.16)');
+    warm.addColorStop(0.4, 'rgba(255,214,130,0.06)');
+    warm.addColorStop(1, 'rgba(255,210,120,0)');
+    pctx.fillStyle = warm;
     pctx.fillRect(0, 0, W, H);
     pctx.globalCompositeOperation = 'source-over';
+
+    /* 极轻的暗角，只为收边 */
+    var vig = pctx.createRadialGradient(W * 0.5, H * 0.42, W * 0.45, W * 0.5, H * 0.45, W * 1.15);
+    vig.addColorStop(0, 'rgba(3,8,20,0)');
+    vig.addColorStop(1, 'rgba(3,8,20,0.34)');
+    pctx.fillStyle = vig;
+    pctx.fillRect(0, 0, W, H);
 
     strokes = [];
     total = 0;
@@ -991,15 +1001,15 @@ function drawSnowBank(dt){
 }
 
 /* 把天空按横条沿流场错位，让画面像流体一样起伏（地面保持稳定） */
-/* 整幅画缓慢摆动 + 轻微缩放，像还活着的画 */
+/* 整幅画缓慢推近（Ken Burns），像镜头在呼吸 */
 function drawWarped(driftX, driftY){
-  var ang = Math.sin(T * 0.15) * 0.0055;
-  var sc = 1.014 + 0.010 * Math.sin(T * 0.105 + 1.1);
+  var zoom = 1.02 + 0.045 * (0.5 - 0.5 * Math.cos(T * 0.055));
+  var panX = Math.sin(T * 0.041) * W * 0.012;
+  var panY = Math.cos(T * 0.033) * H * 0.008;
   ctx.save();
   ctx.translate(W / 2, H / 2);
-  ctx.rotate(ang);
-  ctx.scale(sc, sc);
-  ctx.drawImage(paint, -W / 2 + driftX, -H / 2 + driftY, W, H);
+  ctx.scale(zoom, zoom);
+  ctx.drawImage(paint, -W / 2 + driftX + panX, -H / 2 + driftY + panY, W, H);
   ctx.restore();
 }
 
@@ -1154,6 +1164,7 @@ function buildParticles(){
 }
 
 function startParticles(){
+  return;
   if(particleMode) return;
   try{ buildParticles(); }catch(e){ return; }
   if(!particles.length) return;
@@ -1237,6 +1248,43 @@ function stepTwinkles(dt){
       ctx.lineTo(p.x, p.y + L);
       ctx.stroke();
     }
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+/* ---------------- 金色浮尘 ---------------- */
+var goldDust = [];
+
+function initGoldDust(){
+  goldDust = [];
+  for(var i = 0; i < 130; i++){
+    goldDust.push({
+      x: rand(0, W), y: rand(0, H),
+      sp: rand(7, 24), ph: rand(0, TAU),
+      sw: rand(0.4, 1.2), a: rand(0.22, 0.62),
+      s: rand(0.6, 1.25)
+    });
+  }
+}
+
+function stepGoldDust(dt){
+  ctx.globalCompositeOperation = 'lighter';
+  for(var i = 0; i < goldDust.length; i++){
+    var p = goldDust[i];
+    p.y -= p.sp * dt;
+    p.x += Math.sin(T * p.sw + p.ph) * 10 * dt;
+    if(p.y < -14){
+      p.y = H + 14;
+      p.x = rand(0, W);
+    }
+    if(p.x < -14) p.x = W + 14;
+    if(p.x > W + 14) p.x = -14;
+    var a = p.a * (0.5 + 0.5 * Math.sin(T * 1.15 + p.ph));
+    if(a <= 0.02) continue;
+    var sz = 9 * p.s;
+    ctx.globalAlpha = a;
+    ctx.drawImage(glowWarm, p.x - sz / 2, p.y - sz / 2, sz, sz);
   }
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = 'source-over';
@@ -1340,6 +1388,7 @@ function frame(now){
     drawShooting();
     drawBursts(dt);
     stepTwinkles(dt);
+    stepGoldDust(dt);
     stepSnow(dt);
     drawSnow();
   }
