@@ -120,6 +120,8 @@ function resize(){
   lastT = 0;
   glMode = false;
   gl = null;
+  particleMode = false;
+  pFade = 0;
   glCvs.className = '';
 }
 
@@ -1036,6 +1038,73 @@ function drawGL(){
   gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
+/* ---------------- 画面化为粒子 ---------------- */
+var particles = [], particleMode = false, pFade = 0;
+
+function buildParticles(){
+  particles = [];
+  var img = pctx.getImageData(0, 0, paint.width, paint.height).data;
+  var step = Math.max(6, Math.round(7 * DPR));
+  var pw = paint.width;
+  var cell = step / DPR;
+  for(var y = 0; y < paint.height; y += step){
+    for(var x = 0; x < pw; x += step){
+      var i4 = (y * pw + x) * 4;
+      var r = img[i4], g = img[i4 + 1], b = img[i4 + 2];
+      if(r + g + b < 26) continue;
+      var jx = rand(-cell * 0.34, cell * 0.34);
+      var jy = rand(-cell * 0.34, cell * 0.34);
+      var al = 0.55 + Math.random() * 0.45;
+      var cx = (x + jx * DPR) / DPR, cy = (y + jy * DPR) / DPR;
+      particles.push({
+        hx: cx, hy: cy, x: cx, y: cy,
+        vx: 0, vy: 0,
+        c: 'rgba(' + r + ',' + g + ',' + b + ',' + al.toFixed(2) + ')',
+        sz: cell * (0.55 + Math.random() * 0.55),
+        ph: rand(0, TAU)
+      });
+    }
+  }
+}
+
+function startParticles(){
+  if(particleMode) return;
+  try{ buildParticles(); }catch(e){ return; }
+  if(!particles.length) return;
+  particleMode = true;
+  pFade = 0;
+}
+
+function stepParticles(dt){
+  var i, p, d, wob;
+  var damp = Math.pow(0.90, dt * 60);
+  for(i = 0; i < particles.length; i++){
+    p = particles[i];
+    d = flow(p.x, p.y);
+    wob = 0.55 + 0.45 * Math.sin(T * 0.42 + p.ph);
+    p.vx += (p.hx - p.x) * 3.0 * dt + d[0] * 44 * wob * dt;
+    p.vy += (p.hy - p.y) * 3.0 * dt + d[1] * 27 * wob * dt;
+    p.vx *= damp;
+    p.vy *= damp;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+  }
+  for(i = 0; i < particles.length; i++){
+    p = particles[i];
+    ctx.fillStyle = p.c;
+    ctx.fillRect(p.x - p.sz * 0.5, p.y - p.sz * 0.5, p.sz, p.sz);
+  }
+  /* 少量粒子带柔光，像星点在闪 */
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.20 * pFade;
+  for(i = 0; i < particles.length; i += 11){
+    p = particles[i];
+    ctx.drawImage(glowWarm, p.x - 4.5, p.y - 4.5, 9, 9);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+
 /* ---------------- 主循环 ---------------- */
 function frame(now){
   raf = requestAnimationFrame(frame);
@@ -1053,7 +1122,7 @@ function frame(now){
     revealStep(Math.max(6, Math.round(speed)));
   } else if(!capShown){
     capShown = true;
-    startGL();
+    startParticles();
     capEl.className = 'cap show';
     setTimeout(function(){ hintEl.className = 'hint show'; }, 1400);
   }
@@ -1064,7 +1133,16 @@ function frame(now){
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = 1;
-  if(glMode){
+  if(particleMode){
+    pFade = Math.min(1, pFade + dt * 0.9);
+    ctx.fillStyle = '#05091a';
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 0.26 * (1 - pFade * 0.45);
+    drawWarped(drift, driftY);
+    ctx.globalAlpha = pFade;
+    stepParticles(dt);
+    ctx.globalAlpha = 1;
+  } else if(glMode){
     ctx.clearRect(0, 0, W, H);
     drawGL();
   } else {
