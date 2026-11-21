@@ -259,11 +259,11 @@ function build(){
   horizon = H * 0.615;
 
   stars = [
-    { x: W * 0.385, y: H * 0.123, r: W * 0.078, k: 1.9 },
-    { x: W * 0.200, y: H * 0.390, r: W * 0.062, k: 1.7 },
-    { x: W * 0.540, y: H * 0.250, r: W * 0.052, k: 1.5 },
-    { x: W * 0.660, y: H * 0.400, r: W * 0.046, k: 1.4 },
-    { x: W * 0.060, y: H * 0.105, r: W * 0.040, k: 1.2 }
+    { x: W * 0.385, y: H * 0.123, r: W * 0.078, k: 1.9, lum: 0.85 },
+    { x: W * 0.200, y: H * 0.390, r: W * 0.062, k: 1.7, lum: 0.60 },
+    { x: W * 0.540, y: H * 0.250, r: W * 0.052, k: 1.5, lum: 0.48 },
+    { x: W * 0.660, y: H * 0.400, r: W * 0.046, k: 1.4, lum: 0.36 },
+    { x: W * 0.060, y: H * 0.105, r: W * 0.040, k: 1.2, lum: 0.30 }
   ];
   moon = { x: W * 0.875, y: H * 0.285, r: W * 0.098, k: 2.6 };
 
@@ -280,12 +280,25 @@ function build(){
     pctx.fillRect(0, 0, W, H);
     /* 整图铺满整屏（和音乐播放器那种背景一致） */
     pctx.drawImage(imgEl, 0, 0, W, H);
-    /* 提亮 + 提饱和：叠一层同图 */
+
+    /* 亮度分层：以月亮为中心的光照，离月亮越远越暗 */
     pctx.globalCompositeOperation = 'lighter';
-    pctx.globalAlpha = 0.16;
-    pctx.drawImage(imgEl, 0, 0, W, H);
-    pctx.globalAlpha = 1;
+    var lit = pctx.createRadialGradient(moon.x, moon.y, 0, moon.x, moon.y, W * 1.05);
+    lit.addColorStop(0, 'rgba(255,228,158,0.26)');
+    lit.addColorStop(0.22, 'rgba(226,220,180,0.15)');
+    lit.addColorStop(0.55, 'rgba(150,180,240,0.06)');
+    lit.addColorStop(1, 'rgba(0,0,0,0)');
+    pctx.fillStyle = lit;
+    pctx.fillRect(0, 0, W, H);
     pctx.globalCompositeOperation = 'source-over';
+
+    /* 暗角：把画面边缘和下方压暗 */
+    var vig = pctx.createRadialGradient(W * 0.62, H * 0.26, W * 0.22, W * 0.5, H * 0.45, W * 1.15);
+    vig.addColorStop(0, 'rgba(2,6,18,0)');
+    vig.addColorStop(0.55, 'rgba(2,6,18,0.16)');
+    vig.addColorStop(1, 'rgba(2,6,18,0.62)');
+    pctx.fillStyle = vig;
+    pctx.fillRect(0, 0, W, H);
 
     strokes = [];
     total = 0;
@@ -482,19 +495,20 @@ function revealStep(n){
 
 /* 星星的光环 */
 function drawStar(s, t){
+  var L = (s.lum === undefined) ? 0.6 : s.lum;
   var pulse = 0.72 + 0.28 * Math.sin(t * 1.1 + s.x * 0.01);
   ctx.globalCompositeOperation = 'lighter';
   var g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r * 2.6);
-  g.addColorStop(0, 'rgba(255,244,205,' + (0.50 * pulse) + ')');
-  g.addColorStop(0.30, 'rgba(255,216,125,' + (0.20 * pulse) + ')');
-  g.addColorStop(0.65, 'rgba(255,200,95,' + (0.07 * pulse) + ')');
+  g.addColorStop(0, 'rgba(255,244,205,' + (0.50 * pulse * L) + ')');
+  g.addColorStop(0.30, 'rgba(255,216,125,' + (0.20 * pulse * L) + ')');
+  g.addColorStop(0.65, 'rgba(255,200,95,' + (0.07 * pulse * L) + ')');
   g.addColorStop(1, 'rgba(255,200,90,0)');
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.arc(s.x, s.y, s.r * 2.6, 0, TAU);
   ctx.fill();
 
-  ctx.globalAlpha = 0.20 * pulse;
+  ctx.globalAlpha = 0.20 * pulse * L;
   ctx.fillStyle = '#fff6d6';
   ctx.beginPath();
   ctx.arc(s.x, s.y, s.r * 0.55, 0, TAU);
@@ -503,7 +517,7 @@ function drawStar(s, t){
   /* 柔和的同心光环，像画里的星星那样一圈圈晕开 */
   for(var i = 1; i <= 3; i++){
     var rr = s.r * (0.95 + i * 0.62);
-    ctx.globalAlpha = (0.16 - i * 0.038) * pulse;
+    ctx.globalAlpha = (0.16 - i * 0.038) * pulse * L;
     ctx.strokeStyle = 'rgba(255,234,168,1)';
     ctx.lineWidth = Math.max(1.4, s.r * (0.20 - i * 0.04));
     ctx.beginPath();
@@ -538,16 +552,17 @@ function drawMoon(t){
 }
 
 function drawMoonGlow(){
-  var pulse = 0.82 + 0.18 * Math.sin(T * 0.85);
+  var pulse = 0.85 + 0.15 * Math.sin(T * 0.7);
   ctx.globalCompositeOperation = 'lighter';
-  var g = ctx.createRadialGradient(moon.x, moon.y, moon.r * 0.35, moon.x, moon.y, moon.r * 2.8);
-  g.addColorStop(0, 'rgba(255,245,190,' + (0.34 * pulse) + ')');
-  g.addColorStop(0.35, 'rgba(255,222,132,' + (0.15 * pulse) + ')');
-  g.addColorStop(0.7, 'rgba(255,210,110,' + (0.05 * pulse) + ')');
-  g.addColorStop(1, 'rgba(255,205,100,0)');
+  var g = ctx.createRadialGradient(moon.x, moon.y, moon.r * 0.2, moon.x, moon.y, moon.r * 3.6);
+  g.addColorStop(0, 'rgba(255,250,215,' + (0.46 * pulse) + ')');
+  g.addColorStop(0.18, 'rgba(255,238,175,' + (0.30 * pulse) + ')');
+  g.addColorStop(0.42, 'rgba(255,224,140,' + (0.14 * pulse) + ')');
+  g.addColorStop(0.72, 'rgba(255,214,120,' + (0.05 * pulse) + ')');
+  g.addColorStop(1, 'rgba(255,210,110,0)');
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.arc(moon.x, moon.y, moon.r * 2.8, 0, TAU);
+  ctx.arc(moon.x, moon.y, moon.r * 3.6, 0, TAU);
   ctx.fill();
   ctx.globalCompositeOperation = 'source-over';
 }
@@ -661,12 +676,12 @@ function initFlowP(){
     flowP.push({
       x: rand(0, W), y: rand(-30, H * 0.94),
       life: rand(0, 6), max: rand(7, 16),
-      r: rand(1.1, 3.4),
+      r: rand(1.4, 4.0),
       sp: rand(7, 19),
       ph: rand(0, TAU),
       sw: rand(0.25, 0.75),
       warm: warm,
-      a: rand(0.22, 0.55)
+      a: rand(0.35, 0.78)
     });
   }
 }
