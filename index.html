@@ -307,6 +307,24 @@ function build(){
     pctx.fillStyle = fade;
     pctx.fillRect(0, f0, W, H - f0);
 
+    /* 画作下缘的积雪（烘进画里，保证是亮的） */
+    pctx.globalCompositeOperation = 'lighter';
+    var sb = pctx.createLinearGradient(0, imgH - H * 0.075, 0, imgH);
+    sb.addColorStop(0, 'rgba(205,228,255,0)');
+    sb.addColorStop(0.55, 'rgba(220,236,255,0.22)');
+    sb.addColorStop(1, 'rgba(232,244,255,0.62)');
+    pctx.fillStyle = sb;
+    pctx.beginPath();
+    pctx.moveTo(0, imgH);
+    for(var sbx = 0; sbx <= W; sbx += 8){
+      var sby = imgH - H * 0.048 + Math.sin(sbx * 0.016 + 1.1) * H * 0.011 + Math.sin(sbx * 0.041) * H * 0.004;
+      pctx.lineTo(sbx, sby);
+    }
+    pctx.lineTo(W, imgH);
+    pctx.closePath();
+    pctx.fill();
+    pctx.globalCompositeOperation = 'source-over';
+
     /* 极轻的暗角，只为收边 */
     var vig = pctx.createRadialGradient(W * 0.5, H * 0.42, W * 0.62, W * 0.5, H * 0.45, W * 1.22);
     vig.addColorStop(0, 'rgba(3,8,20,0)');
@@ -1379,7 +1397,7 @@ function frame(now){
       ctx.globalAlpha = 1;
     }
   }
-  drawSnowBank(dt);
+  if(!IMG_MODE) drawSnowBank(dt);
 
   /* 村庄灯火呼吸 */
   if(revealed > total * 0.55){
