@@ -289,9 +289,22 @@ function build(){
 
     pctx.fillStyle = '#050b1c';
     pctx.fillRect(0, 0, W, H);
-    /* 整图铺满整屏（和音乐播放器那种背景一致） */
-    pctx.drawImage(imgEl, 0, 0, W, H);
+    /* 画作按原比例占上方，下缘渐隐进深色背景 */
+    var imgH = Math.min(H, ih * (W / iw));
+    pctx.fillStyle = '#050b1a';
+    pctx.fillRect(0, 0, W, H);
+    pctx.drawImage(imgEl, 0, 0, W, imgH);
 
+    var kk = imgH / H;
+    for(var si = 0; si < stars.length; si++) stars[si].y *= kk;
+    moon.y *= kk;
+
+    var f0 = imgH - H * 0.05;
+    var fade = pctx.createLinearGradient(0, f0, 0, imgH + H * 0.13);
+    fade.addColorStop(0, 'rgba(5,11,26,0)');
+    fade.addColorStop(1, 'rgba(5,11,26,1)');
+    pctx.fillStyle = fade;
+    pctx.fillRect(0, f0, W, H - f0);
     /* 月亮方向的暖光 */
     pctx.globalCompositeOperation = 'lighter';
     var warm = pctx.createRadialGradient(moon.x, moon.y, 0, moon.x, moon.y, W * 0.95);
