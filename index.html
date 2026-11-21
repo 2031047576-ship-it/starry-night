@@ -300,8 +300,8 @@ function build(){
     for(var si = 0; si < stars.length; si++) stars[si].y *= kk;
     moon.y *= kk;
 
-    var f0 = imgH - H * 0.015;
-    var fade = pctx.createLinearGradient(0, f0, 0, imgH + H * 0.055);
+    var f0 = imgH - H * 0.035;
+    var fade = pctx.createLinearGradient(0, f0, 0, imgH + H * 0.095);
     fade.addColorStop(0, 'rgba(5,11,26,0)');
     fade.addColorStop(1, 'rgba(5,11,26,1)');
     pctx.fillStyle = fade;
