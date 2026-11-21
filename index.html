@@ -1362,7 +1362,7 @@ function frame(now){
       ctx.globalAlpha = 1;
     }
   }
-  drawSnowBank(dt);
+  if(!IMG_MODE) drawSnowBank(dt);
 
   /* 村庄灯火呼吸 */
   if(revealed > total * 0.55){
